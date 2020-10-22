@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from timeit import default_timer as timer
 from pathlib import Path
 import itertools
 import argparse
@@ -182,6 +183,7 @@ def get_cfg():
 
 
 def main():
+    t0 = timer()
     directory, output, compression = parse_args()
 
     cfg = get_cfg()
@@ -190,6 +192,10 @@ def main():
     files = gen_files(zips)
 
     write_zips(cfg, files)
+    t1 = timer()
+
+    delta = (t1 - t0) * 1000
+    print(f'\nSuccess! Completed in {delta:.2f}ms')
 
 
 if __name__ == '__main__':
