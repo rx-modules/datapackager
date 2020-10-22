@@ -1,0 +1,38 @@
+{
+  "title": "MyProject",
+  "version": "v1.0.0",
+  "name-format": "{title} {version} {release_name}",
+  "global": {
+    "ignore": [
+      "releases/*",
+      "docs/*",
+      "fabric.mod.json",
+      "*.paper.*"
+    ],
+    "whitelist": [
+      "*.json",
+      "*.mcfunction",
+      "pack.png",
+      "pack.mcmeta"
+    ]
+  },
+  "releases": {
+    "standard": {
+      "name": ""
+    },
+    "fabric": {
+      "ignore": [
+        "pack.mcmeta"
+      ],
+      "include": [
+        "fabric.mod.json"
+      ],
+      "ending": ".jar"
+    },
+    "paper": {
+      "replacer": {
+        ".paper.mcfunction": ".mcfunction"
+      }
+    }
+  }
+}
