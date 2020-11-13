@@ -49,7 +49,11 @@ def gen_zips(cfg, out, compression):
             logging.warning(f'overwriting {fname} since it already exists')
 
         # ZipFile as a resource manager so that it auto closes
-        zip_kwargs = {'mode': 'w', 'compression': zipfile.ZIP_DEFLATED, 'compresslevel': compression}
+        zip_kwargs = {
+            'mode': 'w',
+            'compression': zipfile.ZIP_DEFLATED,
+            'compresslevel': compression
+        }
         with zipfile.ZipFile(out / fname, **zip_kwargs) as zip:
             yield release, zip
 
@@ -127,12 +131,18 @@ def parse_args():
         help='changed logging level to INFO',
         default='INFO', type=str, choices={'DEBUG', 'INFO', 'WARN'}
     )
+    parser.add_argument(
+        '-v', '--version',
+        help='override version level in config file',
+        default=None, type=str
+    )
     args = parser.parse_args()
 
     directory = Path(args.dir)
     output = Path(args.output)
 
-    logging.basicConfig(format='\033[1m%(levelname)s\033[0m: %(message)s', level=LOG_LEVELS[args.log])
+    logging.basicConfig(
+        format='\033[1m%(levelname)s\033[0m: %(message)s', level=LOG_LEVELS[args.log])
 
     # if debug:
     #     logging.setLevel(logging.DEBUG)
@@ -148,10 +158,10 @@ def parse_args():
     output.mkdir(parents=True, exist_ok=True)
     logging.info(f'{str(directory)} exists')
 
-    return directory, output, args.compression
+    return directory, output, args.compression, args.version
 
 
-def get_cfg():
+def get_cfg(version):
     cfg = None
     toml_cfg = f'{CONFIG}.toml'
     json_cfg = f'{CONFIG}.json'
@@ -179,14 +189,18 @@ def get_cfg():
             raise ConfigNotFoundError('Could not find a project config.')
 
     logging.info('successfully loaded config')
+
+    # override version from parse_args
+    cfg['ver'] = version if version is not None else cfg['ver']
+
     return cfg
 
 
 def main():
     t0 = timer()
-    directory, output, compression = parse_args()
+    directory, output, compression, version = parse_args()
 
-    cfg = get_cfg()
+    cfg = get_cfg(version)
 
     zips = gen_zips(cfg, output, compression)
     files = gen_files(zips)

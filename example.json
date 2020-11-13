@@ -1,7 +1,10 @@
 {
+  "cfg-ver": "1.1.0",
+
   "title": "MyProject",
   "version": "v1.0.0",
   "name-format": "{title} {version} {release_name}",
+
   "global": {
     "ignore": [
       "releases/*",
@@ -12,14 +15,17 @@
     "whitelist": [
       "*.json",
       "*.mcfunction",
+      "*.nbt",
       "pack.png",
       "pack.mcmeta"
     ]
   },
+
   "releases": {
     "standard": {
       "name": ""
     },
+
     "fabric": {
       "ignore": [
         "pack.mcmeta"
@@ -29,6 +35,7 @@
       ],
       "ending": ".jar"
     },
+
     "paper": {
       "replacer": {
         ".paper.mcfunction": ".mcfunction"
