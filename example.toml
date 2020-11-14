@@ -1,4 +1,4 @@
-cfg-ver = '1.1.0'
+config-version = '1.1.0'
 ###
 # [ Datapack Builder ]
 # This config file describes your datapack and the releases
@@ -10,8 +10,8 @@ cfg-ver = '1.1.0'
 #      ex: '{title}-{version}-{release_name}'
 #   output-folder = <folder name to output>
 
-title = 'MyProject'
-version = 'v1.0.0'
+title       = 'MyProject'
+version     = 'v1.0.0'
 name-format = '{title} {version} {release_name}'
 
 [global]
@@ -21,12 +21,12 @@ name-format = '{title} {version} {release_name}'
 # Note that all options are optional
 ###
 # Options:
-# 	exclude = [<list of patterns>]
-#  	only-allow = [<list of patterns>]
+# 	ignore    = [<list of patterns>]
+#  	whitelist = [<list of patterns>]
 ###
 
-	ignore = ['releases/*', 'docs/*', 'fabric.mod.json', '*.paper.*']
-	whitelist = ['*.json', '*.mcfunction', 'pack.png', 'pack.mcmeta']
+	ignore    = ['releases/*', 'docs/*', 'fabric.mod.json', '*.paper.*']
+	whitelist = ['*.json', '*.mcfunction', '*.nbt', 'pack.png', 'pack.mcmeta']
 
 [releases]
 
@@ -35,24 +35,32 @@ name-format = '{title} {version} {release_name}'
 # Note that all options are optional.
 ###
 # [releases.<name>]
-#   name = <override name of zipfile>
-#   ending = <alternative zip ext (.zip is default)>
-# 	ignore = [<list of patterns>]
+#   name     = <override name of zipfile>
+#   ending   = <alternative zip ext (.zip is default)>
+# 	ignore   = [<list of patterns>]
 #	replacer = {<if pat matches>: <replace contents of this file>}
-#	include = ['<list of included items'] (overrides ignore)
-#	[releases.<name>.replace] 
-#	   <pattern> = <replace>
-#	   <pattern> = <replace>
-#	   ...
+#	include  = ['<list of included items'] (overrides ignore)
+#   regex    = {'<regex>': <replace>}
 ###
 
 	[releases.standard]
 		name = ''
 
 	[releases.fabric]
-		ignore = ['pack.mcmeta']
-		include = ['fabric.mod.json']
-		ending = '.jar'
+		ending  = '.jar'
+		rules = [
+			{ ignore  = ['pack.mcmeta']     },
+			{ include = ['fabric.mod.json'] },
+		]
+
+		# or
+
+		[[releases.fabric.rules]]
+			ignore = ['pack.mcmeta']
+		[[releases.fabric.rules]]
+			include = ['fabric.mod.json']
 
 	[releases.paper]
-		replacer = {'.paper.mcfunction'='.mcfunction'}
+		rules = [
+			{ replacer = {'.paper.mcfunction'='.mcfunction'} }
+		]

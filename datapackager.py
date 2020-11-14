@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 
 from timeit import default_timer as timer
+from fnmatch import fnmatch
 from pathlib import Path
-import itertools
+from collections import namedtuple
 import argparse
 import zipfile
 import logging
 import os
+import re
 
+
+VERSION = namedtuple('version', 'major minor patch')(1, 1, 0)
 
 CONFIG = 'project'
 LOG_LEVELS = {
@@ -16,8 +20,14 @@ LOG_LEVELS = {
     'WARNING': logging.WARNING,
 }
 
+RULES = {'ignore', 'replacer', 'include', 'regex'}
 
-class ConfigNotFoundError(Exception):
+
+class ConfigError(Exception):
+    pass
+
+
+class ConfigNotFoundError(ConfigError):
     pass
 
 
@@ -54,6 +64,15 @@ def gen_zips(cfg, out, compression):
             'compression': zipfile.ZIP_DEFLATED,
             'compresslevel': compression
         }
+
+        # cfg
+        # default rule
+        cfg['releases'][release]['rules'] = cfg['releases'][release].get('rules', [])
+        cfg['releases'][release]['rules'].insert(
+            0,
+            {rule: cfg['releases'][release].get(rule, [] if rule not in {'replacer', 'regex'} else {}) for rule in RULES}  # noqa
+        )
+
         with zipfile.ZipFile(out / fname, **zip_kwargs) as zip:
             yield release, zip
 
@@ -65,53 +84,83 @@ def gen_files(zips):
             yield release, zip, file
 
 
+def match(file, pattern):
+    '''dumb matching dumb dumb dumb dumb'''
+
+    # first do pathlib matching
+    if file.match(pattern):
+        return True
+
+    # then do fnmatch'ing
+    return fnmatch(str(file), pattern)
+
+
 def write_zips(cfg, gen):
     for tup in gen:
         release, zip, file = tup
-        releases = cfg['releases']
-
-        include_file = True
+        lines = None
 
         # ignore folders
         if file.is_dir():
             logging.debug(f'skipped(directory)       {file}')
             continue
-        else:
-            logging.debug(file)
+
+        logging.debug(file)
 
         # whitelist checking
         for rule in cfg['global'].get('whitelist', []):
-            if file.match(rule):
+            if match(file, rule):
                 include_file = True
                 break
         else:  # nobreak
-            logging.info(f'skipped(whitelist)       {file}')
+            # logging.info(f'skipped(whitelist)       {file}')
             include_file = False
 
-        # Let's chain our ignore rules together
-        ignore_rules = itertools.chain(
-            cfg['global'].get('ignore', []),
-            releases[release].get('ignore', []),
-        )
-
-        for rule in ignore_rules:
-            if file.match(rule):
+        # global ignore
+        for rule in cfg['global'].get('ignore', []):
+            if match(file, rule):
                 include_file = False
                 logging.info(f'skipped(ignored)         {file}')
                 break
 
-        for pat, replacee in releases[release].get('replacer', {}).items():
-            if pat in str(file):
-                replacer(zip, file, pat, replacee)
-                include_file = False
+        # rules
+        for rule in cfg['releases'][release]['rules']:
+            for ignore_rule in rule.get('ignore', []):
+                if match(file, ignore_rule):
+                    include_file = False
+                    logging.info(f'skipped(ignored)         {file}')
+                    break
 
-        for rule in releases[release].get('include', []):
-            if file.match(rule):
-                include_file = True
-                logging.info(f'included                 {file}')
-                break
+            for pat, replacee in rule.get('replacer', {}).items():
+                if include_file and pat in str(file):
+                    replacer(zip, file, pat, replacee)
+
+            for include_rule in rule.get('include', []):
+                if match(file, include_rule):
+                    include_file = True
+                    logging.info(f'included                 {file}')
+                    break
+
+            if include_file and 'regex' in rule:
+                with file.open() as f:
+                    lines = f.readlines()
+                for i in range(len(lines)):
+                    for pat, repl in rule['regex'].items():
+                        try:
+                            pat = re.compile(pat)
+                        except Exception:
+                            logging.warning(f'regex failed compile')
+                            continue
+
+                        if pat.search(lines[i]):
+                            out = pat.sub(repl, lines[i])
+                            logging.info(f'regex: replaced {lines[i]} w/ {out}')
+                            lines[i] = out
 
         if include_file:
+            if lines:
+                zip.writestr(str(file), '\n'.join(lines))
+                continue
             zip.write(file)
 
 
@@ -191,7 +240,29 @@ def get_cfg(version):
     logging.info('successfully loaded config')
 
     # override version from parse_args
-    cfg['ver'] = version if version is not None else cfg['ver']
+    cfg['version'] = version if version is not None else cfg['version']
+
+    # config version checking
+    if 'config-version' not in cfg:
+        raise ConfigError(f'config-version not found. Please use version: {".".join(VERSION)}')
+    else:
+        try:
+            major, minor, patch = [int(i) for i in cfg['config-version'].split('.')]
+        except ValueError:
+            raise ConfigError(
+                'config-version incorrectly formatted. Must be in form: major.minor.patch')
+
+        if major < VERSION.major:
+            raise ConfigError(
+                f'datapackager is on major version {VERSION.major} while config provided {major}')
+
+        elif minor < VERSION.minor:
+            logging.warning(
+                f'datapackager is on minor version {VERSION.minor} while config provided {minor}')
+
+        elif patch < VERSION.patch:
+            logging.info(
+                f'datapackager is on patch version {VERSION.patch} while config provided {patch}')
 
     return cfg
 

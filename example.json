@@ -1,5 +1,5 @@
 {
-  "cfg-ver": "1.1.0",
+  "config-version": "1.1.0",
 
   "title": "MyProject",
   "version": "v1.0.0",
@@ -27,19 +27,18 @@
     },
 
     "fabric": {
-      "ignore": [
-        "pack.mcmeta"
+      "rules": [
+        { "ignore":  [ "pack.mcmeta"     ] },
+        { "include": [ "fabric.mod.json" ] },
       ],
-      "include": [
-        "fabric.mod.json"
-      ],
+
       "ending": ".jar"
     },
 
     "paper": {
-      "replacer": {
-        ".paper.mcfunction": ".mcfunction"
-      }
+      "rules": [
+        { "replacer": { ".paper.mcfunction": ".mcfunction" }}
+      ]
     }
   }
 }
