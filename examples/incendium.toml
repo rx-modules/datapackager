@@ -1,0 +1,59 @@
+###
+# [ Datapack Builder ]
+# This config file describes your datapack and the releases
+###
+# Options:
+# 	title = <title>
+#   version = <version>
+#   name-format = <string w/ {} denotating output naming format>
+#      ex: '{title}-{version}-{release_name}'
+#   output-folder = <folder name to output>
+
+title = 'Incendium'
+version = 'v3.1.5'
+name-format = '{title} {version} {release_name}'
+
+[global]
+
+###
+# This defines rules for all releases
+# Note that all options are optional
+###
+# Options:
+# 	exclude = [<list of patterns>]
+#  	only-allow = [<list of patterns>]
+###
+
+	ignore = ['releases/*', 'docs/*', 'fabric.mod.json', '*.paper.*', '*.noseed']
+	whitelist = ['*.zip','*.json', '*.mcfunction', 'pack.png', 'pack.mcmeta','*.nbt','*.png','*.properties']
+
+[releases]
+
+###
+# This defines rules per release.
+# Note that all options are optional.
+###
+# [releases.<name>]
+# 	ignore = [<list of patterns>]
+#	replacer = {<if pat matches>: <replace contents of this file>}
+#	include = ['<list of included items'] (overrides ignore)
+#	[releases.<name>.replace] 
+#	   <pattern> = <replace>
+#	   <pattern> = <replace>
+#	   ...
+###
+
+	[releases.standard]
+		name = ''
+
+
+	[releases.fabric]
+		ignore = ['pack.mcmeta','the_nether.json','*.zip']
+		include = ['fabric.mod.json']
+		ending = '.jar'
+
+	[releases.noseed]
+		replacer = {'.noseed'='.json'}
+
+	[releases.paper]
+		replacer = {'.paper'='.mcfunction'}

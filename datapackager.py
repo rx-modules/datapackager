@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 from timeit import default_timer as timer
 from fnmatch import fnmatch
@@ -11,7 +11,7 @@ import os
 import re
 
 
-VERSION = namedtuple('version', 'major minor patch')(1, 1, 0)
+VERSION = namedtuple('version', 'major minor patch')(1, 1, 1)
 
 CONFIG = 'project'
 LOG_LEVELS = {
@@ -185,6 +185,11 @@ def parse_args():
         help='override version level in config file',
         default=None, type=str
     )
+    parser.add_argument(
+        '-r', '--release',
+        help='only process a single release',
+        default=None, type=str
+    )
     args = parser.parse_args()
 
     directory = Path(args.dir)
@@ -203,14 +208,14 @@ def parse_args():
     if not directory.exists():
         raise FileNotFoundError(f'the directory, {str(directory)}, was not found')
 
-    os.chdir(str(directory))  # 3.6+ allows output w/o str(...)
+    os.chdir(str(directory))  # 3.6+ allows w/o str(...)
     output.mkdir(parents=True, exist_ok=True)
     logging.info(f'{str(directory)} exists')
 
-    return directory, output, args.compression, args.version
+    return directory, output, args.compression, args.version, args.release
 
 
-def get_cfg(version):
+def get_cfg(version, release):
     cfg = None
     toml_cfg = f'{CONFIG}.toml'
     json_cfg = f'{CONFIG}.json'
@@ -264,14 +269,21 @@ def get_cfg(version):
             logging.info(
                 f'datapackager is on patch version {VERSION.patch} while config provided {patch}')
 
+    # check release argument
+    if release:
+        if release in cfg['releases']:
+            cfg['releases'] = {release: cfg['releases'][release]}
+        else:
+            raise ConfigError(f'Release title {release} not found in config')
+
     return cfg
 
 
 def main():
     t0 = timer()
-    directory, output, compression, version = parse_args()
+    directory, output, compression, version, release = parse_args()
 
-    cfg = get_cfg(version)
+    cfg = get_cfg(version, release)
 
     zips = gen_zips(cfg, output, compression)
     files = gen_files(zips)
