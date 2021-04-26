@@ -11,7 +11,7 @@ import os
 import re
 
 
-VERSION = namedtuple('version', 'major minor patch')(1, 1, 1)
+VERSION = namedtuple('version', 'major minor patch')(1, 1, 2)
 
 CONFIG = 'project'
 LOG_LEVELS = {
@@ -159,7 +159,7 @@ def write_zips(cfg, gen):
 
         if include_file:
             if lines:
-                zip.writestr(str(file), '\n'.join(lines))
+                zip.writestr(str(file), ''.join(lines))
                 continue
             zip.write(file)
 
