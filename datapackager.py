@@ -11,7 +11,7 @@ import os
 import re
 
 
-VERSION = namedtuple('version', 'major minor patch')(1, 1, 2)
+VERSION = namedtuple('version', 'major minor patch')(1, 1, 3)
 
 CONFIG = 'project'
 LOG_LEVELS = {
@@ -99,6 +99,7 @@ def write_zips(cfg, gen):
     for tup in gen:
         release, zip, file = tup
         lines = None
+        save_changes = False
 
         # ignore folders
         if file.is_dir():
@@ -149,16 +150,21 @@ def write_zips(cfg, gen):
                         try:
                             pat = re.compile(pat)
                         except Exception:
-                            logging.warning(f'regex failed compile')
+                            logging.warning('regex failed compile')
                             continue
 
                         if pat.search(lines[i]):
                             out = pat.sub(repl, lines[i])
                             logging.info(f'regex: replaced {lines[i]} w/ {out}')
                             lines[i] = out
+                            save_changes = True
+
+                if save_changes:
+                    with file.open('w') as f:
+                        f.write(''.join(lines))
 
         if include_file:
-            if lines:
+            if save_changes:
                 zip.writestr(str(file), ''.join(lines))
                 continue
             zip.write(file)
