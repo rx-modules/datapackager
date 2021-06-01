@@ -96,6 +96,7 @@ def match(file, pattern):
 
 
 def write_zips(cfg, gen):
+    regex_file_cache = {}
     for tup in gen:
         release, zip, file = tup
         lines = None
@@ -143,8 +144,13 @@ def write_zips(cfg, gen):
                     break
 
             if include_file and 'regex' in rule:
-                with file.open() as f:
-                    lines = f.readlines()
+                if file not in regex_file_cache:
+                    with file.open() as f:
+                        lines = f.readlines()
+                    regex_file_cache[file] = lines
+                else:
+                    lines = regex_file_cache[file]
+
                 for i in range(len(lines)):
                     for pat, repl in rule['regex'].items():
                         try:
@@ -158,10 +164,6 @@ def write_zips(cfg, gen):
                             logging.info(f'regex: replaced {lines[i]} w/ {out}')
                             lines[i] = out
                             save_changes = True
-
-                if save_changes:
-                    with file.open('w') as f:
-                        f.write(''.join(lines))
 
         if include_file:
             if save_changes:
